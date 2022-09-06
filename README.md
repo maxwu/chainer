@@ -1,2 +1,2 @@
-# chain
-Chain HTTP middleware functions to a http.Handler
+# chainer
+Assemble HTTP middleware functions to a http.Handler Chain
