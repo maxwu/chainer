@@ -6,14 +6,47 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
 )
 
-var tr *testing.T
+func TestChain(t *testing.T) {
+	t.Run("Verify the Chain stops processing on failed Link", func(t *testing.T) {
+		t.Parallel()
+		processed := []string{}
+		linkA := func(h http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				processed = append(processed, "linkA")
+				h.ServeHTTP(w, r)
+			})
+		}
+		linkB := func(h http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				processed = append(processed, "linkB")
+				http.Error(w, "linkB generated an error", http.StatusInternalServerError)
+			})
+		}
 
-var _ = Describe("Test Chain", func() {
-	It("Verify the Chain stops processing on failed Link", func() {
+		linkC := func(_ http.Handler) http.Handler {
+			return http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+				processed = append(processed, "linkC")
+			})
+		}
+
+		h := NewChain(linkA, linkB, linkC).GetHandler()
+		req, _ := http.NewRequest("GET", "/path", nil)
+		rr := httptest.NewRecorder()
+
+		// handle an incoming request
+		h.ServeHTTP(rr, req)
+
+		assert.Equal(t, []string{"linkA", "linkB"}, processed)
+		assert.Equal(t, http.StatusInternalServerError, rr.Result().StatusCode)
+		body, _ := io.ReadAll(rr.Result().Body)
+		assert.Contains(t, string(body), "linkB generated an error")
+	})
+
+	t.Run("Verify the Chain stops processing on failed Link", func(t *testing.T) {
+		t.Parallel()
 		processed := []string{}
 		linkA := func(h http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -42,13 +75,14 @@ var _ = Describe("Test Chain", func() {
 		// handle an incoming request
 		h.ServeHTTP(rr, req)
 
-		Expect(processed).To(Equal([]string{"linkA", "linkB"}))
-		Expect(rr.Result().StatusCode).To(Equal(http.StatusInternalServerError))
+		assert.Equal(t, []string{"linkA", "linkB"}, processed)
+		assert.Equal(t, http.StatusInternalServerError, rr.Result().StatusCode)
 		body, _ := io.ReadAll(rr.Result().Body)
-		Expect(string(body)).To(ContainSubstring("linkB generated an error"))
+		assert.Contains(t, string(body), "linkB generated an error")
 	})
 
-	It("Sunnyday scenario", func() {
+	t.Run("Sunnyday scenario", func(t *testing.T) {
+		t.Parallel()
 		processed := []string{}
 		linkA := func(h http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -78,13 +112,7 @@ var _ = Describe("Test Chain", func() {
 
 		h.ServeHTTP(rr, req)
 
-		Expect(processed).To(Equal([]string{"linkA", "linkB", "linkC"}))
-		Expect(rr.Result().StatusCode).To(Equal(http.StatusOK))
+		assert.Equal(t, []string{"linkA", "linkB", "linkC"}, processed)
+		assert.Equal(t, http.StatusOK, rr.Result().StatusCode)
 	})
-})
-
-func TestRunner(t *testing.T) {
-	tr = t
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Chain Test Suite")
 }
