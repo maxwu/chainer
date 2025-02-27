@@ -1,5 +1,7 @@
 package chain
 
+import "slices"
+
 import "net/http"
 
 type LinkFunc func(http.Handler) http.Handler
@@ -11,7 +13,7 @@ type Chain struct {
 // NewChain creates an http handler chain from LinkFunc typed links
 func NewChain(links ...LinkFunc) Chain {
 	return Chain{
-		append(([]LinkFunc)(nil), links...),
+		slices.Clone(links),
 	}
 }
 
