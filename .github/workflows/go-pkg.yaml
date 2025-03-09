@@ -1,0 +1,14 @@
+name: 📦 Go Package
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  index-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Index go.dev/packages
+        run: |
+          curl -sk https://sum.golang.org/lookup/github.com/maxwu/chainer@${{ github.ref_name }}

@@ -21,7 +21,7 @@ jobs:
         go-version-file: 'go.mod'
 
     - name: Run coverage
-      run: go test -v -count=1 -race -coverprofile=coverage.out -covermode=atomic ./...
+      run: go test -v -count=1 -race -coverprofile=coverage.out -covermode=atomic ./... -labels env=ci
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
