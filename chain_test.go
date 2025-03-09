@@ -1,4 +1,4 @@
-package chain
+package chainer
 
 import (
 	"io"
@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	_ "github.com/maxwu/gotest-labels/apply"
+	"github.com/stretchr/testify/assert"
 )
 
 // @env=local
